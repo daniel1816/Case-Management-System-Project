@@ -1,0 +1,128 @@
+import datetime
+import calendar
+import random
+import numpy
+import pandas as pd
+import uuid
+from datetime import date, timedelta
+from random import choices
+
+## Create table for associate
+
+ass_columns = ['Emp_ID', 'First_name', 'Last_name', 'Start_date', 'Rate']
+
+df_ass=pd.DataFrame(columns = ass_columns)
+
+df_ass['Emp_ID'] = ['1001','1002','1003','1004','1005','1006','1007','1008','1009','1010']
+
+df_ass['First_name']=['Jason','Jenny','Alex','Doug','Bruce','Bill','Shawn','Linda','Jill','Katie']
+df_ass['Last_name']=['Wang','Smith','Brown','White','Bernstein','Johnson','James','Whitening','Black','Rice']
+df_ass['Start_date']=['2015-01-01','2016-05-01','2015-08-01','2015-03-01','2015-11-01',
+                      '2016-01-01','2017-11-01','2018-03-01','2017-01-01','2016-01-01']
+df_ass['Rate']=['350','380','350','300','400','390','420','320','400','350']
+
+df_ass.to_csv('associate.csv', index = False)
+df_ass
+
+## Create client table
+
+client_columns = ['Client_ID', 'Name', 'Address', 'Billing_atty']
+df_client=pd.DataFrame(columns = client_columns)
+df_client['Client_ID'] = ['1001','1002','1003','1004','1005']
+df_client['Name'] = ['Google','Apple','Tesla','Microsoft','Facebook']
+df_client['Billing_atty']=['1005','1002','1003','1001','1008']
+
+df_client
+df_client.to_csv('client.csv',index = False)
+
+## Create case table
+
+case_columns = ['Case_ID','Status','Filing_date','Issue_date','WA_ID','Clinet_ID']
+df_case = pd.DataFrame(columns =case_columns)
+
+#### Assign random case number to each case
+
+random_case = random.sample(range(1000, 2000), 400)
+
+df_case.Case_ID = random.sample(random_case,400)
+
+#### Assign random filing data and issue data (issue data has to be after the filing data)
+
+start1 = date(2015,1,1)
+end1 = date(2016,12,31)
+res_dates1 = []
+while start1 != end1:
+    start1 += timedelta(days =1)
+    res_dates1.append(start1)
+
+start2 = date(2017,1,1)
+end2 = date(2021,10,7)
+res_dates2 = []
+while start2 != end2:
+    start2 += timedelta(days =1)
+    res_dates2.append(start2)
+
+df_case.Filing_date = choices(res_dates1, k = 400)
+
+df_case.Issue_date = choices(res_dates2, k = 400)
+
+#### Check whether filing data is prior to issue data
+
+df_case[df_case.Filing_date >= df_case.Issue_date].shape
+
+#### Assign attorney id and client id to each case
+
+df_case.WA_ID =choices(df_ass.Emp_ID, k = 400)
+df_case.Clinet_ID = choices(df_client.Client_ID, k= 400)
+
+#### Assign status info with weights
+
+sts = {'unfiled':2,
+      'pending':6,
+      'abandoned':2,
+      'granted':6}
+
+
+st_list = [st for st in sts]
+weights = [sts[st] for st in sts]
+df_case.Status = random.choices(st_list, weights=weights, k=400)
+
+df_case.groupby('Status').count()
+
+#### Remove issue data info for cases with status that is not granted
+
+df_case.loc[df_case['Status']!='granted','Issue_date'] = 'NA'
+
+df_case.loc[df_case['Status']=='unfiled','Filing_date'] = 'NA'
+
+
+
+df_case.to_csv('patentCase.csv',index = False)
+df_case
+
+##Create table for correspondence tabl
+
+cor_columns = ['Correspondence_ID','Case_ID', 'Correspondence_type','MLD', 'Duedate']
+
+df_correspondence = pd.DataFrame(columns = cor_columns)
+
+cor = ['Filing Receipt','Corrected Filing Rceipt','Regular Office Action', 'Final Office Action', 'Advisory Action', 'Notice on Appeal',
+      'Notice of Allowance']
+
+df_correspondence.Case_ID = choices(df_case.Case_ID,k = 4000)
+
+df_correspondence.Correspondence_type = choices(cor, k = 4000)
+df_correspondence.Correspondence_ID = range(10001,10001+len(df_correspondence))
+df_correspondence
+
+start = date (2015,1,1)
+end = date(2021,12,31)
+res_dates = [start]
+while start != end:
+        start += timedelta(days =1)
+        res_dates.append(start)
+df_correspondence.MLD = choices(res_dates, k = 4000)
+
+df_correspondence
+df_correspondence.to_csv('correspondence.csv', index = False)
+
